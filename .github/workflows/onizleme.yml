@@ -1,0 +1,57 @@
+name: Oyun Önizlemesi
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "betikler/**"
+      - "project.godot"
+      - "assets/**"
+      - ".github/workflows/onizleme.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: onizleme
+  cancel-in-progress: true
+
+jobs:
+  ekran:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Godot ve sanal ekran
+        run: |
+          curl -sSL https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip -o g.zip
+          unzip -q g.zip && mv Godot_v4.3-stable_linux.x86_64 godot && chmod +x godot && rm g.zip
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgl1-mesa-dri libglx-mesa0 libxi6 libxrandr2 libxcursor1 libxinerama1 > /dev/null
+
+      - name: Varlıkları içe aktar
+        run: |
+          ./godot --headless --path . --editor --quit 2>&1 | grep -iE "error|warning" | head -30 || true
+
+      - name: Ekran görüntüleri
+        run: |
+          rm -rf onizleme/oyun
+          timeout 200 xvfb-run -a -s "-screen 0 1280x720x24" ./godot --path . --rendering-driver opengl3 --resolution 1280x720 -- --onizleme=onizleme/oyun 2>&1 | grep -vE "^\s*$" > kayit.txt || true
+          tail -30 kayit.txt
+          echo "Hata sayısı: $(grep -cE 'SCRIPT ERROR|Parse Error' kayit.txt || true)"
+          grep -E -A3 "SCRIPT ERROR|Parse Error" kayit.txt | head -40 || true
+          ls -la onizleme/oyun
+
+      - name: Denge botu (3 gün)
+        run: |
+          rm -rf ~/.local/share/godot/app_userdata
+          timeout 600 ./godot --headless --path . --fixed-fps 60 -- --bot=3 2>&1 | grep -E "BOT|SCRIPT ERROR|Parse Error" || true
+
+      - name: Depoya kaydet
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898732+github-actions[bot]@users.noreply.github.com"
+          git add onizleme/oyun
+          git commit -m "Oyun önizleme görüntüleri" || echo "değişiklik yok"
+          git pull --rebase -q
+          git push
