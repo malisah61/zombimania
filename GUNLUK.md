@@ -13,3 +13,7 @@
 - `assets/siparis.json` (38 görsel: oyuncu, 3 zombi, 14 dünya nesnesi, 18 ikon) + `gorsel_uret.yml` + `araclar/gorsel_uret.py`.
 - Oyun görsel varsa onu çizer (karakterlerde kâğıt kukla animasyonu: sekme, sallanma, saldırıda eğilme, yöne göre aynalama),
   yoksa kodla çizer. Kamp ateşinde alev kodla üstte çizilir. Yer tutucu görsellerle önizlemede denendi.
+- İlk çizim (36 görsel, GPU ≈ 709 sn ≈ 0,12 $): karakterler, ölü ağaç, kaya, mezarlar, ot, tezgâh çok iyi.
+  Desen/duvar kâğıdı ya da sahne çıkanlar (çoğu ikon, dut çalısı, duvar), karlı ağaç tabanı ve alevli kamp ateşi
+  için tarifler "tek nesne" olacak şekilde yeniden yazıldı; betik artık yeniden çizimde 2 aday üretip en az
+  dolu (desen olmayan) olanı seçiyor, ek negatif kelimeler gönderiyor.

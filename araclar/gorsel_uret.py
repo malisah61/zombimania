@@ -31,6 +31,17 @@ def ciz(govde, deneme=3):
     return None
 
 
+VARSAYILAN_NEGATIF = ("text, watermark, blurry, cropped, multiple characters, character sheet, duplicate, multiple views, "
+                      "cast shadow, drop shadow, frame, border, patterned background, wallpaper, scenery, landscape")
+
+
+def doluluk(png_b64):
+    """Görselin ne kadarı dolu (0-1). Desen/duvar kâğıdı çıkınca neredeyse 1 olur."""
+    im = Image.open(io.BytesIO(base64.b64decode(png_b64))).convert("RGBA")
+    a = im.getchannel("A").point(lambda v: 255 if v > 24 else 0)
+    return sum(a.histogram()[255:]) / (im.width * im.height)
+
+
 def hazirla(png_b64, boy):
     im = Image.open(io.BytesIO(base64.b64decode(png_b64))).convert("RGBA")
     kutu = im.getchannel("A").point(lambda a: 255 if a > 24 else 0).getbbox()
@@ -59,13 +70,22 @@ def main():
             "style": "other", "n": 1, "seed": int(sp.get("seed", 1000 + i)),
             "width": sp.get("w", 1024), "height": sp.get("h", 1024),
             "auto": True, "lora": sp.get("lora", s.get("lora")),
+            "negative": (VARSAYILAN_NEGATIF + ", " + s.get("negatif_ek", ""))[:500],
         }
+        if ad in yeniden or "hepsi" in yeniden:
+            govde["n"] = 2  # yeniden çizimde 2 aday, en temiz olanı seçilir
         print(f"→ {ad}")
         d = ciz(govde)
         if not d or not d.get("images"):
             print(f"  ✗ {ad} çizilemedi")
             continue
-        hazirla(d["images"][0], int(sp["boy"])).save(yol, optimize=True)
+        # desen/sahne gibi her yeri dolu adayları ele: en az dolu (ama boş olmayan) aday seçilir
+        adaylar = sorted(((doluluk(b), b) for b in d["images"]), key=lambda x: x[0])
+        adaylar = [x for x in adaylar if x[0] > 0.03] or adaylar
+        print(f"  doluluk: {[round(x[0], 2) for x in adaylar]}")
+        if adaylar[0][0] > 0.85:
+            print(f"  ⚠ {ad}: arka plan temizlenememiş görünüyor")
+        hazirla(adaylar[0][1], int(sp["boy"])).save(yol, optimize=True)
         gpu += float(d.get("seconds", 0))
         yapilan.append(ad)
         print(f"  ✓ {ad} ({d.get('seconds')} sn)")
