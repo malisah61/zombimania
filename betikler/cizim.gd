@@ -5,6 +5,40 @@ extends RefCounted
 
 const CIZGI := Color(0.08, 0.07, 0.06)
 
+# ---------------------------------------------------------------- Sprite Atölye görselleri
+## assets/gorseller/<ad>.png varsa o çizilir, yoksa aşağıdaki kodla çizim kullanılır.
+## Görseller assets/siparis.json'dan GitHub Actions'ta (gorsel_uret.yml) üretilir.
+
+static var _dokular := {}
+
+static func doku(ad: String) -> Texture2D:
+	if _dokular.has(ad):
+		return _dokular[ad]
+	var yol := "res://assets/gorseller/%s.png" % ad
+	var t: Texture2D = null
+	if ResourceLoader.exists(yol):
+		t = load(yol)
+	_dokular[ad] = t
+	return t
+
+## Görseli tabanı (0,0)'da ortalı çizer. egim: üst kısmı yana yatırır (sallanma), f: -1 = aynala.
+static func resim(ci: CanvasItem, t: Texture2D, boy: float, egim := 0.0, f := 1.0, renk := Color.WHITE, kayma := Vector2.ZERO, olcek := Vector2.ONE) -> void:
+	var s := boy / t.get_height()
+	var w := t.get_width() * s
+	ci.draw_set_transform_matrix(Transform2D(0.0, Vector2(f * olcek.x, olcek.y), egim, kayma))
+	ci.draw_texture_rect(t, Rect2(-w / 2.0, -boy, w, boy), false, renk)
+	ci.draw_set_transform_matrix(Transform2D.IDENTITY)
+
+## Karakter görseli için kâğıt kukla animasyonu: yürürken sekme ve sallanma, saldırıda öne eğilme.
+static func karakter_resmi(ci: CanvasItem, t: Texture2D, boy: float, adim: float, yon: Vector2, hareket: bool, saldiri: float, renk: Color) -> float:
+	var f := 1.0 if yon.x >= 0.0 else -1.0
+	var sek := absf(sin(adim)) * 5.0 if hareket else sin(Time.get_ticks_msec() * 0.003) * 1.0
+	var egim := (sin(adim) * 0.07 if hareket else 0.0) * f + saldiri * 0.22 * f
+	var ezil := 1.0 + (sin(Time.get_ticks_msec() * 0.003) * 0.012 if not hareket else 0.0) - saldiri * 0.06
+	golge(ci, boy * 0.15)
+	resim(ci, t, boy, egim, f, renk, Vector2(0, -sek), Vector2(1.0 + (1.0 - ezil) * 0.5, ezil))
+	return f
+
 static func sekil(ci: CanvasItem, noktalar: PackedVector2Array, renk: Color, kalin := 2.5) -> void:
 	ci.draw_colored_polygon(noktalar, renk)
 	var k := noktalar.duplicate()
@@ -139,6 +173,14 @@ static func mezar(ci: CanvasItem, cesit: int) -> void:
 		sekil(ci, PackedVector2Array([Vector2(-3, -2), Vector2(3, -2), Vector2(3, -44), Vector2(-3, -44)]), Color(0.40, 0.32, 0.24))
 		sekil(ci, PackedVector2Array([Vector2(-12, -34), Vector2(12, -34), Vector2(12, -28), Vector2(-12, -28)]), Color(0.40, 0.32, 0.24))
 
+static func alev(ci: CanvasItem, yakit_orani: float, t: float, y := -4.0) -> void:
+	if yakit_orani <= 0.0:
+		return
+	var h := 18.0 + 30.0 * yakit_orani
+	var titre := sin(t * 13.0) * 3.0 + sin(t * 7.3) * 2.0
+	ci.draw_colored_polygon(PackedVector2Array([Vector2(-13, y), Vector2(-9, y - h * 0.5), Vector2(-4 + titre * 0.5, y - h * 0.75), Vector2(titre, y - h), Vector2(6, y - h * 0.6), Vector2(11, y - h * 0.4), Vector2(13, y)]), Color(0.95, 0.45, 0.10))
+	ci.draw_colored_polygon(PackedVector2Array([Vector2(-7, y), Vector2(-3, y - h * 0.45), Vector2(titre * 0.6, y - h * 0.7), Vector2(5, y - h * 0.35), Vector2(7, y)]), Color(1.0, 0.85, 0.35))
+
 static func kamp_atesi(ci: CanvasItem, yakit_orani: float, t: float) -> void:
 	golge(ci, 28)
 	for i in 8:
@@ -187,6 +229,22 @@ static func duvar(ci: CanvasItem, oran: float, cesit: int) -> void:
 
 ## Oyuncu: kendi tasarımımız — turuncu bereli, yeşil montlu, sırt çantalı hayatta kalan.
 static func oyuncu(ci: CanvasItem, adim: float, yon: Vector2, hareket: bool, el: String, zirh: bool, saldiri: float, hasar_t: float) -> void:
+	var gt := doku("oyuncu")
+	if gt != null:
+		var renk := Color.WHITE.lerp(Color(1, 0.35, 0.35), hasar_t)
+		var boy: float = Veri.GORSEL_BOY.get("oyuncu", 140.0)
+		var f := karakter_resmi(ci, gt, boy, adim, yon, hareket, saldiri, renk)
+		if el != "":
+			var it := doku("ikon_" + el)
+			var aci := -0.5 + (saldiri * 2.2 if saldiri > 0.0 else 0.0)
+			var el_n := Vector2(16 * f, -boy * 0.42 - (absf(sin(adim)) * 5.0 if hareket else 0.0))
+			if it != null:
+				ci.draw_set_transform(el_n, aci * f, Vector2(f, 1) * 0.75)
+				ci.draw_texture_rect(it, Rect2(-it.get_width() * 0.5 * 0.55, -it.get_height() * 0.55, it.get_width() * 0.55, it.get_height() * 0.55), false)
+				ci.draw_set_transform_matrix(Transform2D.IDENTITY)
+			else:
+				alet(ci, el, el_n, aci * f, f)
+		return
 	golge(ci, 18)
 	var sag := yon.x >= 0.0
 	var arka := yon.y < -0.5
@@ -275,6 +333,20 @@ static func alet(ci: CanvasItem, id: String, el: Vector2, aci: float, f: float) 
 static func zombi(ci: CanvasItem, tur: String, adim: float, yon: Vector2, saldiri: float, hasar_t: float, yaniyor: bool) -> void:
 	var z: Dictionary = Veri.ZOMBILER.get(tur, Veri.ZOMBILER["yuruyen"])
 	var b: float = z["boy"]
+	var gt := doku("zombi_" + tur)
+	if gt != null:
+		var renk := Color.WHITE
+		if yaniyor:
+			renk = Color(1.0, 0.6, 0.4)
+		renk = renk.lerp(Color(2.0, 2.0, 2.0), hasar_t * 0.6)
+		karakter_resmi(ci, gt, Veri.GORSEL_BOY.get("zombi_" + tur, 140.0), adim, yon, true, saldiri, renk)
+		if yaniyor:
+			var t := Time.get_ticks_msec() / 1000.0
+			for i in 3:
+				var x := (i - 1) * 12.0 * b
+				var h := 18.0 + sin(t * 12.0 + i) * 5.0
+				ci.draw_colored_polygon(PackedVector2Array([Vector2(x - 7, -50 * b), Vector2(x, -50 * b - h), Vector2(x + 7, -50 * b)]), Color(1.0, 0.55, 0.1, 0.85))
+		return
 	golge(ci, 18 * b)
 	var f := 1.0 if yon.x >= 0.0 else -1.0
 	var ten: Color = z["renk"]
@@ -323,6 +395,8 @@ static func zombi(ci: CanvasItem, tur: String, adim: float, yon: Vector2, saldir
 
 ## Zombi gözleri: karanlıkta parlar (ayrı düğümde, ışıktan etkilenmez).
 static func zombi_gozu(ci: CanvasItem, tur: String, yon: Vector2) -> void:
+	if doku("zombi_" + tur) != null:
+		return
 	var b: float = Veri.ZOMBILER.get(tur, Veri.ZOMBILER["yuruyen"])["boy"]
 	var f := 1.0 if yon.x >= 0.0 else -1.0
 	var kafa := Vector2(5.0 * f + 3 * f, -54) * b
@@ -332,6 +406,15 @@ static func zombi_gozu(ci: CanvasItem, tur: String, yon: Vector2) -> void:
 # ---------------------------------------------------------------- eşya simgeleri (yaklaşık 48x48 kutuya)
 
 static func simge(ci: CanvasItem, id: String, m: Vector2, s := 1.0) -> void:
+	var t := doku("ikon_" + id)
+	if t == null and id in ["kamp_atesi", "tezgah", "duvar"]:
+		t = doku(id)
+	if t != null:
+		var kutu := 50.0 * s
+		var o := minf(kutu / t.get_width(), kutu / t.get_height())
+		var boyut := Vector2(t.get_width(), t.get_height()) * o
+		ci.draw_texture_rect(t, Rect2(m - boyut / 2.0, boyut), false)
+		return
 	var tr := Transform2D(0, Vector2(s, s), 0, m)
 	ci.draw_set_transform_matrix(tr)
 	match id:

@@ -8,3 +8,8 @@
 - 13 tarifli üretim paneli, 12 yuvalı envanter, El/Gövde kuşanma, yapı kurma (ateş, tezgâh, duvar).
 - Otomatik kayıt, ana menü, ölüm ekranı, başlangıç ipuçları, kodla üretilen sesler.
 - Bot (3 gün): 3. gecenin sonunda öldü → gece zombi sayısı 3+1.6g'den 2+1.4g'ye indirildi.
+
+## 2026-11-21 — Sprite Atölye görselleri
+- `assets/siparis.json` (38 görsel: oyuncu, 3 zombi, 14 dünya nesnesi, 18 ikon) + `gorsel_uret.yml` + `araclar/gorsel_uret.py`.
+- Oyun görsel varsa onu çizer (karakterlerde kâğıt kukla animasyonu: sekme, sallanma, saldırıda eğilme, yöne göre aynalama),
+  yoksa kodla çizer. Kamp ateşinde alev kodla üstte çizilir. Yer tutucu görsellerle önizlemede denendi.

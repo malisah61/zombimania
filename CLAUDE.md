@@ -10,7 +10,12 @@
   `veri.gd` (eşya, tarif, nesne, zombi tabloları), `sesler.gd` (kodla üretilen sesler).
 - Diğer betiklere referanslar bilerek tipsiz (`var oyun`). Başka betiğin sabitine örnek üzerinden değil,
   preload edilmiş betik üzerinden eriş (`OYUNCU.MAKS_CAN`, `NESNE.MAKS_YAKIT`).
-- Görseller şimdilik kodla çiziliyor. Görsel dosyası eklenirse `assets/` altına, kaynağı/lisansı `assets/KAYNAKLAR.md`'ye.
+- **Görseller Sprite Atölye'den:** `assets/siparis.json` (ad, prompt, boy) → `gorsel_uret.yml` iş akışı
+  Sprite Atölye Modal motoruyla (`SPRITE_KEY` repo sırrı) eksikleri çizer → `assets/gorseller/<ad>.png`
+  (2× boyda) → APK ve önizlemeyi tetikler. Claude kullanımı harcamaz. Oyun `Cizim.doku(ad)` ile görseli
+  kullanır, yoksa kodla çizime düşer (ikisi de çalışır kalmalı). Yeni nesne/eşya eklerken siparişe ve
+  `Veri.GORSEL_BOY`'a da ekle; ikonlar `ikon_<eşya_id>`. Beğenilmeyen görsel: iş akışını `yeniden=<ad>` ile çalıştır.
+- Başka görsel dosyası eklenirse `assets/` altına, kaynağı/lisansı `assets/KAYNAKLAR.md`'ye.
   Sadece ticari kullanıma izin veren ücretsiz kaynaklar (CC0 / CC-BY atıfla). `assets/sesler/<ad>.ogg` konursa
   `sesler.gd` kodla üretilen sesin yerine onu kullanır.
 - Derleme: `main`'e her gönderimde `android.yml` APK derler ve `son-surum` sürümüne yükler:

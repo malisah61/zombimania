@@ -1,0 +1,59 @@
+name: Görselleri Sprite Atölye ile Çiz
+
+# Claude kullanımı harcamaz: çizimi Sprite Atölye'nin Modal motoru yapar (Modal kredisi), iş GitHub Actions'ta çalışır.
+on:
+  workflow_dispatch:
+    inputs:
+      yeniden:
+        description: 'Yeniden çizilecekler (virgülle ad, ya da "hepsi"). Boş = sadece eksikler'
+        default: ''
+      sadece:
+        description: 'Sadece bunlar (virgülle ad). Boş = hepsi'
+        default: ''
+  push:
+    branches: [main]
+    paths:
+      - "assets/siparis.json"
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: gorsel-uret
+  cancel-in-progress: false
+
+jobs:
+  ciz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Anahtar kontrolü
+        env:
+          SPRITE_KEY: ${{ secrets.SPRITE_KEY }}
+        run: |
+          if [ -z "$SPRITE_KEY" ]; then
+            echo "::error::SPRITE_KEY yok. Repo Settings > Secrets and variables > Actions > New repository secret: SPRITE_KEY (sprite-atolye'deki ile aynı değer)."
+            exit 1
+          fi
+      - run: pip install -q pillow
+      - name: Çiz
+        env:
+          SPRITE_KEY: ${{ secrets.SPRITE_KEY }}
+          YENIDEN: ${{ inputs.yeniden }}
+          SADECE: ${{ inputs.sadece }}
+        run: python3 araclar/gorsel_uret.py
+      - name: Depoya kaydet (APK kendiliğinden yeniden derlenir)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898732+github-actions[bot]@users.noreply.github.com"
+          git add assets/gorseller
+          git commit -m "Sprite Atölye görselleri" || { echo "değişiklik yok"; exit 0; }
+          git pull --rebase -q
+          git push
+          # bot gönderimleri iş akışı tetiklemez → APK ve önizlemeyi elle başlat
+          gh workflow run android.yml --ref main
+          gh workflow run onizleme.yml --ref main
+        env:
+          GH_TOKEN: ${{ github.token }}

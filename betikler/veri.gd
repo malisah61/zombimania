@@ -81,6 +81,14 @@ const ZOMBILER := {
 	"iri": {"can": 220.0, "hiz": 50.0, "hasar": 25.0, "boy": 1.45, "renk": Color(0.38, 0.47, 0.40)},
 }
 
+## Sprite Atölye görsellerinin oyundaki yüksekliği (piksel). assets/siparis.json'daki "boy" ile aynı tutulur.
+const GORSEL_BOY := {
+	"oyuncu": 140.0, "zombi_yuruyen": 140.0, "zombi_kosucu": 122.0, "zombi_iri": 200.0,
+	"agac": 250.0, "agac_2": 230.0, "olu_agac": 210.0, "kaya": 95.0, "fidan": 75.0, "ot": 62.0,
+	"dut_calisi": 85.0, "dut_calisi_bos": 85.0, "havuc": 42.0, "mezar": 95.0, "mezar_2": 105.0,
+	"kamp_atesi": 52.0, "tezgah": 100.0, "duvar": 100.0,
+}
+
 static func esya(id: String) -> Dictionary:
 	return ESYALAR.get(id, {"ad": id, "tur": "malzeme", "yigin": 20})
 

@@ -72,8 +72,48 @@ func _process(d: float) -> void:
 		set_process(false)
 		queue_redraw()
 
+func _gorsel_ciz(s: float) -> bool:
+	var ad := tur
+	var boy_carpan := 1.0
+	var renk := Color.WHITE
+	match tur:
+		"agac":
+			if cesit % 7 == 0 and Cizim.doku("agac_2") != null:
+				ad = "agac_2"
+		"mezar":
+			if cesit % 2 == 1 and Cizim.doku("mezar_2") != null:
+				ad = "mezar_2"
+		"kaya":
+			boy_carpan = 0.6 + 0.4 * float(vurus) / 5.0
+		"ot", "fidan":
+			if not dolu:
+				boy_carpan = 0.3
+				renk = Color(0.75, 0.7, 0.6)
+		"dut_calisi":
+			if not dolu:
+				if Cizim.doku("dut_calisi_bos") != null:
+					ad = "dut_calisi_bos"
+				else:
+					renk = Color(0.7, 0.75, 0.7)
+		"duvar":
+			renk = Color.WHITE.lerp(Color(0.6, 0.5, 0.45), 1.0 - dayanim / DUVAR_CAN)
+		"esya":
+			return false
+	var t := Cizim.doku(ad)
+	if t == null:
+		return false
+	var boy: float = Veri.GORSEL_BOY.get(ad, 100.0) * boy_carpan
+	var gen := boy * t.get_width() / t.get_height()
+	Cizim.golge(self, gen * 0.42)
+	Cizim.resim(self, t, boy, -s * 0.012 * (2.0 if tur == "agac" else 1.0), 1.0 if cesit % 2 == 0 or tur in ["tezgah", "duvar"] else -1.0, renk)
+	if tur == "kamp_atesi":
+		Cizim.alev(self, yakit / MAKS_YAKIT, Time.get_ticks_msec() / 1000.0, -boy * 0.35)
+	return true
+
 func _draw() -> void:
 	var s := sin(_sallanma * 18.0) * _sallanma * 4.0
+	if _gorsel_ciz(s):
+		return
 	match tur:
 		"agac":
 			Cizim.agac(self, cesit, 1.0 - float(vurus) / 6.0, s)
